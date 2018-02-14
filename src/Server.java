@@ -36,10 +36,10 @@ public class Server {
         while (true) {
             try {
                 clientSocket = serverSocket.accept();
-                clientThread curr_client =  new clientThread(clientSocket, clients);
-                clients.add(curr_client);
-                curr_client.start();
-                System.out.println("Client "  + clientNum + " is connected!");
+                clientThread currClient =  new clientThread(clientSocket, clients);
+                clients.add(currClient);
+                currClient.start();
+                System.out.println("Client <"  + clientNum + "> is connected!");
                 clientNum++;
 
             } catch (IOException e) {
@@ -82,12 +82,14 @@ class clientThread extends Thread {
             while (true) {
 
                 boolean userFound = false;
-                synchronized(this)
-                {
-                    this.os.writeObject("Please enter your name :");
+                synchronized(this) {
+                    this.os.writeObject("Please enter your name: ");
                     this.os.flush();
-                    name = ((String) this.is.readObject()).trim();
+                    name = ((String) this.is.readObject()).trim(); // TO delete the spacing and only get the name
 
+                    /*
+                        Check if the username is already taken!
+                     */
                     if(clients != null) {
                         for (clientThread c:
                                 clients) {
@@ -117,24 +119,29 @@ class clientThread extends Thread {
 
             System.out.println("Client Name is " + name);
 
-            this.os.writeObject("*** Welcome " + name + " to our chat room ***\nEnter bye or exit to leave the chat room");
+            this.os.writeObject("*** Welcome " + name + " to ChatiApp ***");
+            this.os.writeObject("To broadcast: write your message");
+            this.os.writeObject("To send to specific user: @username: <Your message>");
+            this.os.writeObject("To view all members: $");
+            this.os.writeObject("To leave: type bye or exit");
             this.os.flush();
 
-            synchronized(this)
-            {
+            synchronized(this) {
 
-                for (clientThread curr_client : clients)
-                {
-                    if (curr_client != null && curr_client == this) {
+                for (clientThread currClient : clients) {
+                    if (currClient != null && currClient == this) {
                         clientName = "@" + name;
                         break;
                     }
                 }
 
-                for (clientThread curr_client : clients) {
-                    if (curr_client != null && curr_client != this) {
-                        curr_client.os.writeObject(name + " has joined");
-                        curr_client.os.flush();
+                /*
+                    inform other users that a new client has joined the pool :D
+                 */
+                for (clientThread currClient : clients) {
+                    if (currClient != null && currClient != this) {
+                        currClient.os.writeObject(name + " has joined");
+                        currClient.os.flush();
 
                     }
 
@@ -152,25 +159,21 @@ class clientThread extends Thread {
 
 
                 if (line.toLowerCase().equals("bye")
-                        || line.toLowerCase().equals("exit")) {
-
+                        || line.toLowerCase().equals("exit"))
                     break;
-                }
 
-                if (line.startsWith("$")) {
+                if (line.startsWith("$"))
                     viewAll();
-                }
-                else if (line.startsWith("@")) {
-                    unicast(line,name);
-                }
 
-                else {
+                else if (line.startsWith("@"))
+                    unicast(line,name);
+
+                else
                     broadcast(line,name);
-                }
 
             }
 
-            /* Terminate the Session for a particluar user */
+            /* close the Session for user */
 
             this.os.writeObject("*** Bye " + name + " ***");
             this.os.flush();
@@ -178,15 +181,18 @@ class clientThread extends Thread {
             clients.remove(this);
 
 
+            /*
+                inform other users that a new client has left the pool :D
+             */
             synchronized(this) {
 
                 if (!clients.isEmpty()) {
 
-                    for (clientThread curr_client : clients) {
+                    for (clientThread curClient : clients) {
 
-                        if (curr_client != null && curr_client != this && curr_client.clientName != null) {
-                            curr_client.os.writeObject("*** The user " + name + " disconnected ***");
-                            curr_client.os.flush();
+                        if (curClient != null && curClient != this && curClient.clientName != null) {
+                            curClient.os.writeObject("*** The user " + name + " disconnected ***");
+                            curClient.os.flush();
                         }
                     }
                 }
@@ -198,18 +204,18 @@ class clientThread extends Thread {
 
         } catch (IOException e) {
 
-            System.out.println("User Session terminated");
+            System.out.println(e);
 
         } catch (ClassNotFoundException e) {
 
-            System.out.println("Class Not Found");
+            System.out.println(e);
         }
     }
 
     void viewAll() {
 
         try {
-            this.os.writeObject("\nAll People in the Chatting Room: ");
+            this.os.writeObject("\nAll available people: ");
         } catch (Exception e) {
             System.out.println(e);
         }
@@ -231,17 +237,17 @@ class clientThread extends Thread {
 
         synchronized(this){
 
-            for (clientThread curr_client : clients) {
+            for (clientThread currClient : clients) {
 
-                if (curr_client != null && curr_client.clientName != null && curr_client.clientName!=this.clientName)
-                {
-                    curr_client.os.writeObject("<" + name + "> " + line);
-                    curr_client.os.flush();
+                if (currClient != null && currClient.clientName != null
+                        && currClient.clientName!=this.clientName) {
+                    currClient.os.writeObject("<" + name + "> " + line);
+                    currClient.os.flush();
                 }
             }
-            this.os.writeObject("Broadcast message sent successfully.");
+            this.os.writeObject("message sent successfully.");
             this.os.flush();
-            System.out.println("Broadcast message sent by " + this.clientName.substring(1));
+            System.out.println("message sent by " + this.clientName.substring(1));
         }
 
     }
@@ -259,17 +265,17 @@ class clientThread extends Thread {
 
             if (!words[1].isEmpty()) {
 
-                for (clientThread curr_client : clients) {
-                    if (curr_client != null && curr_client != this && curr_client.clientName != null
-                            && curr_client.clientName.equals(words[0])) {
-                        curr_client.os.writeObject("<" + name + "> " + words[1]);
-                        curr_client.os.flush();
+                for (clientThread currClient : clients) {
+                    if (currClient != null && currClient != this && currClient.clientName != null
+                            && currClient.clientName.equals(words[0])) {
+                        currClient.os.writeObject("<" + name + "> " + words[1]);
+                        currClient.os.flush();
 
-                        System.out.println(this.clientName.substring(1) + " transferred a private message to client "+ curr_client.clientName.substring(1));
+                        System.out.println(this.clientName.substring(1) + " send a private message to client "+ currClient.clientName.substring(1));
 
                         /* Echo this message to let the sender know the private message was sent.*/
 
-                        this.os.writeObject("Private Message sent to " + curr_client.clientName.substring(1));
+                        this.os.writeObject("Private Message sent to " + currClient.clientName.substring(1));
                         this.os.flush();
                         break;
                     }

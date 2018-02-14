@@ -17,14 +17,6 @@ public class Client implements Runnable {
 
         String host = "localhost";
 
-        if (args.length < 2) {
-            System.out.println("Default Server: " + host + ", Default Port: " + portNumber);
-        } else {
-            host = args[0];
-            portNumber = Integer.valueOf(args[1]).intValue();
-            System.out.println("Server: " + host + ", Port: " + portNumber);
-        }
-
         /*
          * Open a socket on a given host and port. Open input and output streams.
          */
@@ -88,10 +80,7 @@ public class Client implements Runnable {
      * Create a thread to read from the server.
      */
     public void run() {
-        /*
-         * Keep on reading from the socket till we receive "Bye" from the
-         * server. Once we received that then we want to break.
-         */
+
         String responseLine;
         BufferedOutputStream bos = null;
 
@@ -100,15 +89,12 @@ public class Client implements Runnable {
 
             while ((responseLine = (String) is.readObject()) != null)  {
 
-                /* Condition for Checking for incoming messages */
-
                 System.out.println(responseLine);
 
 
                 /* Condition for quitting application */
 
-                if (responseLine.indexOf("*** Bye") != -1)
-
+                if (responseLine.indexOf("Bye") != -1)
                     break;
             }
 
@@ -117,7 +103,7 @@ public class Client implements Runnable {
 
         } catch (IOException | ClassNotFoundException e) {
 
-            System.err.println("Server Process Stopped Unexpectedly!!");
+            System.err.println(e);
 
         }
     }

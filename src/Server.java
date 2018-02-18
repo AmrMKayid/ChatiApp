@@ -4,10 +4,10 @@ import java.util.*;
 
 public class Server {
 
-    // The server socket.
+    // Server socket.
     private static ServerSocket serverSocket = null;
 
-    // The client socket.
+    // Client socket.
     private static Socket clientSocket = null;
 
     public static ArrayList<clientThread> clients = new ArrayList<clientThread>();
@@ -16,21 +16,13 @@ public class Server {
 
         int portNumber = 6000;
 
-        System.out.println("Server is running using default port number: " + portNumber);
+        System.out.println("Server is running on port: " + portNumber);
 
-        /*
-         * Open a server socket on the portNumber (default 6000).
-         */
         try {
             serverSocket = new ServerSocket(portNumber);
         } catch (IOException e) {
             System.out.println("Server Socket cannot be created");
         }
-
-        /*
-         * Create a client socket for each connection and pass it to a new client
-         * thread.
-         */
 
         int clientNum = 1;
         while (true) {
@@ -55,9 +47,8 @@ class clientThread extends Thread {
     private String clientName = null;
     private ObjectInputStream is = null;
     private ObjectOutputStream os = null;
-    private Socket clientSocket = null;
+    private Socket clientSocket;
     private final ArrayList<clientThread> clients;
-    private ArrayList<String> clientsNames;
 
     public clientThread(Socket clientSocket, ArrayList<clientThread> clients) {
 
@@ -68,13 +59,8 @@ class clientThread extends Thread {
 
     public void run() {
 
-        ArrayList<clientThread> clients = this.clients;
-
         try {
 
-            /*
-             * Create input and output streams for this client.
-             */
             is = new ObjectInputStream(clientSocket.getInputStream());
             os = new ObjectOutputStream(clientSocket.getOutputStream());
 
@@ -82,14 +68,13 @@ class clientThread extends Thread {
             while (true) {
 
                 boolean userFound = false;
+
                 synchronized(this) {
                     this.os.writeObject("Please enter your name: ");
                     this.os.flush();
-                    name = ((String) this.is.readObject()).trim(); // TO delete the spacing and only get the name
+                    name = ((String) this.is.readObject()).trim(); // deleting spacing to get the name only
 
-                    /*
-                        Check if the username is already taken!
-                     */
+                    // Check if the username is already taken!
                     if(clients != null) {
                         for (clientThread c:
                                 clients) {
@@ -100,7 +85,7 @@ class clientThread extends Thread {
                     }
 
                     if(userFound) {
-                        this.os.writeObject("Username is taken.... Please choose another UNIQUE username");
+                        this.os.writeObject("Username is taken ... Please choose another UNIQUE username");
                         continue;
                     }
 
@@ -115,7 +100,6 @@ class clientThread extends Thread {
 
             }
 
-            /* Welcome the new the client. */
 
             System.out.println("Client Name is " + name);
 
@@ -135,24 +119,21 @@ class clientThread extends Thread {
                     }
                 }
 
-                /*
-                    inform other users that a new client has joined the pool :D
-                 */
+
+                /* inform other users that a new client has joined the pool :D */
                 for (clientThread currClient : clients) {
                     if (currClient != null && currClient != this) {
                         currClient.os.writeObject(name + " has joined");
                         currClient.os.flush();
-
                     }
-
                 }
             }
 
-            /* Start the conversation. */
 
+            /* Start the conversation. */
             while (true) {
 
-                this.os.writeObject("Please Enter command:");
+                this.os.writeObject("Type your command:");
                 this.os.flush();
 
                 String line = (String) is.readObject();
@@ -175,15 +156,13 @@ class clientThread extends Thread {
 
             /* close the Session for user */
 
-            this.os.writeObject("*** Bye " + name + " ***");
+            this.os.writeObject("*** Bye Bye  " + name + "! 👋 ***");
             this.os.flush();
             System.out.println(name + " disconnected.");
             clients.remove(this);
 
 
-            /*
-                inform other users that a new client has left the pool :D
-             */
+            /* inform other users that a new client has left the pool */
             synchronized(this) {
 
                 if (!clients.isEmpty()) {
@@ -191,7 +170,7 @@ class clientThread extends Thread {
                     for (clientThread curClient : clients) {
 
                         if (curClient != null && curClient != this && curClient.clientName != null) {
-                            curClient.os.writeObject("*** The user " + name + " disconnected ***");
+                            curClient.os.writeObject("*** User <" + name + "> disconnected ***");
                             curClient.os.flush();
                         }
                     }
@@ -229,11 +208,9 @@ class clientThread extends Thread {
         }
     }
 
-    /**** This function transfers message to all the client connected to the server ***/
+    /**** Send message to all the client connected to the server ***/
 
     void broadcast(String line, String name) throws IOException, ClassNotFoundException {
-
-        /* Transferring a message to all the clients */
 
         synchronized(this){
 
@@ -253,7 +230,7 @@ class clientThread extends Thread {
     }
 
 
-    /**** This function transfers message or files to a particular client connected to the server ***/
+    /**** Send message to a particular client connected to the server ***/
 
     void unicast(String line, String name) throws IOException, ClassNotFoundException {
 
@@ -272,8 +249,6 @@ class clientThread extends Thread {
                         currClient.os.flush();
 
                         System.out.println(this.clientName.substring(1) + " send a private message to client "+ currClient.clientName.substring(1));
-
-                        /* Echo this message to let the sender know the private message was sent.*/
 
                         this.os.writeObject("Private Message sent to " + currClient.clientName.substring(1));
                         this.os.flush();

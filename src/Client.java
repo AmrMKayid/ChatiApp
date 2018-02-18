@@ -8,7 +8,6 @@ public class Client implements Runnable {
     private static ObjectOutputStream os = null;
     private static ObjectInputStream is = null;
     private static BufferedReader inputLine = null;
-    private static BufferedInputStream bis = null;
     private static boolean closed = false;
 
     public static void main(String[] args) {
@@ -17,58 +16,37 @@ public class Client implements Runnable {
 
         String host = "localhost";
 
-        /*
-         * Open a socket on a given host and port. Open input and output streams.
-         */
         try {
+
             clientSocket = new Socket(host, portNumber);
             inputLine = new BufferedReader(new InputStreamReader(System.in));
             os = new ObjectOutputStream(clientSocket.getOutputStream());
             is = new ObjectInputStream(clientSocket.getInputStream());
+
         } catch (UnknownHostException e) {
             System.err.println("Unknown " + host);
         } catch (IOException e) {
-            System.err.println("No Server found. Please ensure that the Server program is running and try again.");
+            System.err.println("No Server found. Please check if the Server is running and try again :D");
         }
 
-        /*
-         * If everything has been initialized then we want to write some data to the
-         * socket we have opened a connection to on the port portNumber.
-         */
         if (clientSocket != null && os != null && is != null) {
-            try {
 
-                /* Create a thread to read from the server. */
+            try {
                 new Thread(new Client()).start();
 
                 while (!closed) {
 
-                    /* Read input from Client */
-
                     String msg = (String) inputLine.readLine().trim();
 
-                    /* Check the input for private messages or files */
-
-                    if ((msg.split(":").length > 1)) {
-                        os.writeObject(msg);
-                        os.flush();
-                    }
-
-                    /* Check the input for broadcast messages */
-                    else {
-                        os.writeObject(msg);
-                        os.flush();
-                    }
+                    os.writeObject(msg);
+                    os.flush();
                 }
 
-                /*
-                 * Close all the open streams and socket.
-                 */
                 os.close();
                 is.close();
                 clientSocket.close();
-            } catch (IOException e)
-            {
+
+            } catch (IOException e) {
                 System.err.println("IOException:  " + e);
             }
 
@@ -76,23 +54,14 @@ public class Client implements Runnable {
         }
     }
 
-    /*
-     * Create a thread to read from the server.
-     */
+
     public void run() {
 
         String responseLine;
-        BufferedOutputStream bos = null;
-
         try {
-
-
             while ((responseLine = (String) is.readObject()) != null)  {
 
                 System.out.println(responseLine);
-
-
-                /* Condition for quitting application */
 
                 if (responseLine.indexOf("Bye") != -1)
                     break;
@@ -107,4 +76,5 @@ public class Client implements Runnable {
 
         }
     }
+
 }

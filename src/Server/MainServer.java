@@ -1,7 +1,5 @@
 package Server;
 
-import ChatMessage.MessagesToUser;
-
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -19,7 +17,7 @@ public class MainServer {
     public MainServer () {
         try {
             serverSocket = new ServerSocket(6000);
-            System.out.println(MessagesToUser.SERVER + InetAddress.getLocalHost().getHostAddress());
+            System.out.println("Your Current Server IP Address: " + InetAddress.getLocalHost().getHostAddress());
             currentServers = new ArrayList<>();
             currentUsers = new HashSet<>();
         } catch (IOException e) {

@@ -8,6 +8,7 @@ import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.io.IOException;
 import java.io.Serializable;
 
 public class ClientGUI implements Serializable, Listener {
@@ -26,6 +27,7 @@ public class ClientGUI implements Serializable, Listener {
     private JTextArea Messages;
 
     private JScrollPane ChatArea;
+    private JLabel Welcome;
 
     private static DefaultListModel listModel;
     private static ClientGUI gui;
@@ -45,7 +47,7 @@ public class ClientGUI implements Serializable, Listener {
 
         Send.addActionListener(e -> {
 
-            String words[] = Messages.getText().split("\\s", 2);
+            String words[] = Messages.getText().split(": ", 2);
 
             if (words.length > 1 && words[1] != null) {
                 String to = words[0];
@@ -59,17 +61,16 @@ public class ClientGUI implements Serializable, Listener {
                     messagesList.repaint();
                     messagesList.revalidate();
                     Messages.setText("");
-
                     currentClient.sendMessage(msg);
                 } else {
-                    listModel.addElement("Please enter a valid non-empty message!");
+                    listModel.addElement("Please enter a valid message!");
                     messagesList.setModel(listModel);
                     Messages.setText("");
                     messagesList.repaint();
                     messagesList.revalidate();
                 }
             } else {
-                listModel.addElement("Please start the message with @username msg.");
+                listModel.addElement("Please start the message with @username");
                 messagesList.setModel(listModel);
                 Messages.setText("");
                 messagesList.repaint();
@@ -84,6 +85,13 @@ public class ClientGUI implements Serializable, Listener {
 
         logout.addActionListener(e -> {
             currentClient.removeUserFromServer(username);
+            try {
+                currentClient.getSendToServer().close();
+                currentClient.getInFromServer().close();
+            } catch (IOException e1) {
+                e1.printStackTrace();
+            }
+
             System.exit(0);
         });
 
@@ -93,7 +101,7 @@ public class ClientGUI implements Serializable, Listener {
                 JList list = (JList) e.getSource();
                 if (e.getClickCount() == 2) {
                     int index = list.locationToIndex(e.getPoint());
-                    Messages.setText("@" + list.getModel().getElementAt(index) + " ");
+                    Messages.setText("@" + list.getModel().getElementAt(index) + ": ");
                 }
             }
         });
@@ -102,30 +110,24 @@ public class ClientGUI implements Serializable, Listener {
 
     public static void start() {
         init();
-        askForServerIP();
-        askAndValidateUsername();
+        getServerIP();
+        getUserName();
     }
 
     public static void init() {
         frame = new JFrame("GUI");
         frame.setTitle("ChatiApp");
-        gui = new ClientGUI();
-        frame.setContentPane(gui.defaultPanel);
         frame.setSize(new Dimension(800, 600));
-        frame.setResizable(false);
         frame.setLocationRelativeTo(null);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        gui = new ClientGUI();
+        frame.setContentPane(gui.defaultPanel);
+
     }
 
-    private static void askForServerIP() {
-        String serverIPPort = (String) JOptionPane.showInputDialog(
-                frame,
-                "Please Enter the Server IP and Port:\n",
-                "Server IP",
-                JOptionPane.PLAIN_MESSAGE,
-                null,
-                null,
-                "localhost, 6000");
+    private static void getServerIP() {
+        String serverIPPort = (String) JOptionPane.showInputDialog(frame, "Please Enter the Server IP and Port:\n", "Server IP",
+                JOptionPane.PLAIN_MESSAGE, null, null, "localhost, 6000");
 
         String[] ip_port = serverIPPort.split(",");
         currentClient = new Client(ip_port[0], Integer.parseInt(ip_port[1].trim()));
@@ -133,26 +135,24 @@ public class ClientGUI implements Serializable, Listener {
         currentClient.connectToServer();
     }
 
-    private static void askAndValidateUsername() {
+    private static void getUserName() {
         String username = "";
-        username = (String) JOptionPane.showInputDialog(
-                frame,
-                "Please Enter Your Username:\n"
-                ,
-                "Login",
-                JOptionPane.PLAIN_MESSAGE,
-                null,
-                null,
-                "Untitled");
+        username = (String) JOptionPane.showInputDialog(frame, "Please Enter Your Username:\n",
+                "Login", JOptionPane.PLAIN_MESSAGE, null, null, "");
         currentClient.AddUserToServer(username);
-//        changeWelcomeMessage(username);
+        WelcomeMessage(username);
         gui.username = username;
     }
 
-    private void updateMembersList(String[] data) {
+    private static void WelcomeMessage(String username) {
+        gui.Welcome.setText(" *** Welcome, " + username + "! ***");
+        gui.Welcome.updateUI();
+    }
+
+    private void updateMembers(String[] data) {
         DefaultListModel model = new DefaultListModel();
-        for (String x : data)
-            model.addElement(x);
+        for (String m : data)
+            model.addElement(m);
         MembersList.setModel(model);
         messagesList.revalidate();
         messagesList.repaint();
@@ -161,37 +161,20 @@ public class ClientGUI implements Serializable, Listener {
     @Override
     public void sendMessage(Message msg) {
         switch (msg.type) {
-            case APPROVED:
-                frame.setVisible(true);
-                currentClient.getLocalMembers();
-                break;
-            case ADD:
-                break;
-            case REMOVE:
-                break;
-            case USER_EXISTS:
-                askAndValidateUsername();
-                break;
-            case LOCAL_MEMBERS:
-                updateMembersList((String[]) msg.data);
-                break;
-            case ALL_MEMBERS:
-                updateMembersList((String[]) msg.data);
-                break;
+            case APPROVED: frame.setVisible(true); currentClient.getLocalMembers(); break;
+            case ADD: break;
+            case REMOVE: break;
+            case USER_EXISTS: getUserName(); break;
+            case LOCAL_MEMBERS: updateMembers((String[]) msg.data); break;
+            case ALL_MEMBERS: updateMembers((String[]) msg.data); break;
             case MESSAGE:
                 listModel.addElement("From " + msg.from + " : " + msg.data);
                 messagesList.setModel(listModel);
                 messagesList.revalidate();
                 messagesList.repaint();
                 break;
-            case ERROR:
-                listModel.addElement("Message wasn't sent due to an error with the server.");
-                messagesList.setModel(listModel);
-                messagesList.revalidate();
-                messagesList.repaint();
-                break;
             case USER_NOT_FOUND:
-                listModel.addElement("Username not found, please enter a valid name or refresh the member list.");
+                listModel.addElement("Username not found, please enter a valid name or refresh the member list!");
                 messagesList.setModel(listModel);
                 messagesList.revalidate();
                 messagesList.repaint();

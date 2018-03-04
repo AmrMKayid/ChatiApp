@@ -36,41 +36,20 @@ public class ClientThread extends Thread {
             Object data;
             while (((data = readFromUser.readObject()) != null)) {
                 Message msg = (Message) data;
-                if (msg == null || !msg.isAlive()) {
-                    continue;
-                }
+                if (msg == null || !msg.isAlive()) continue;
                 switch (msg.type) {
-                    case ADD:
-                        String username = (String) msg.data;
-                        server.checkUserExists(username, server.SocketsIDs.get(clientSocket));
-                        break;
+                    case ADD: server.userExists((String) msg.data, server.SocketsIDs.get(clientSocket)); break;
+                    case APPROVED: this.clientName = (String) msg.data; break;
+                    case ALL_MEMBERS: server.getAllMembers(msg.from); break;
+                    case LOCAL_MEMBERS: sendToUser.writeObject(new Message(Type.LOCAL_MEMBERS, getMembers())); break;
                     case REMOVE:
-                        username = (String) msg.data;
-                        server.removeUserFromServer(username);
-                        readFromUser.close();
-                        sendToUser.close();
-                        break;
-                    case APPROVED:
-                        username = (String) msg.data;
-                        this.clientName = username;
-                        break;
-                    case LOCAL_MEMBERS:
-                        sendToUser.writeObject(new Message(Type.LOCAL_MEMBERS, getMembers()));
-                        break;
-                    case ALL_MEMBERS:
-                        server.getAllMembers(msg.from);
-                        break;
+                        server.removeUser((String) msg.data);
+                        readFromUser.close(); sendToUser.close(); break;
                     case MESSAGE:
-                        if (msg.isAlive()) {
-                            if (!isUserInSameServer(msg)) {
-                                server.sendMessageToUser(msg);
-                            } else {
-                                sendMessageToLocalClient(msg);
-                            }
-                        }
+                        if (msg.isAlive() && !isUserInSameServer(msg)) server.sendMessageToUser(msg);
+                        else sendMessageToLocalUser(msg);
                         break;
-                    default:
-                        break;
+                    default: break;
                 }
             }
         } catch (Exception e) {
@@ -80,11 +59,10 @@ public class ClientThread extends Thread {
     }
 
     public String[] getMembers() {
-        String Members[] = new String[currentClients.size()];
-        for (int i = 0; i < currentClients.size(); i++) {
-            if (currentClients.get(i) != null && currentClients.get(i).clientName != null)
-                Members[i] = currentClients.get(i).clientName;
-        }
+        String Members[] = new String[currentClients.size()]; int i = 0;
+        for (ClientThread ct : currentClients)
+            if(ct != null && ct.clientName != null)
+                Members[i++] = ct.clientName;
         return Members;
     }
 
@@ -97,10 +75,10 @@ public class ClientThread extends Thread {
         return false;
     }
 
-    private void sendMessageToLocalClient(Message msg) {
+    private void sendMessageToLocalUser(Message msg) {
         String username = msg.to;
         synchronized (this){
-            for (ClientThread ct : currentClients) {
+            for (ClientThread ct : currentClients)
                 if (ct.clientName.equals(username)) {
                     try {
                         ct.sendToUser.writeObject(msg);
@@ -109,8 +87,6 @@ public class ClientThread extends Thread {
                         e.printStackTrace();
                     }
                 }
-            }
-
         }
     }
 

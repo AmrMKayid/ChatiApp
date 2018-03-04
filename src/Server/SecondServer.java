@@ -1,7 +1,6 @@
 package Server;
 
 import ChatMessage.Message;
-import ChatMessage.MessagesToUser;
 import ChatMessage.Type;
 import Client.ClientThread;
 
@@ -38,7 +37,7 @@ public class SecondServer implements Runnable {
     public SecondServer () {
 
         try {
-            System.out.println(MessagesToUser.SERVER +
+            System.out.println("Your Current Server IP Address: " +
                     InetAddress.getLocalHost().getHostAddress());
         } catch (UnknownHostException e) {
             e.printStackTrace();
@@ -106,21 +105,13 @@ public class SecondServer implements Runnable {
                         loginMsg = new Message(Type.USER_EXISTS, msg.data);
                         sendMessageThroughServer(loginMsg, clientsIDS.get(msg.loginUser));
                         break;
-                    case USER_NOT_FOUND:
-                        sendMessageThroughServer(msg, getUserSocket(msg.from));
-                        break;
-                    case ALL_MEMBERS:
-                        sendMessageThroughServer(msg, getUserSocket(msg.from));
-                        break;
-                    case ERROR:
-                        sendMessageThroughServer(msg, getUserSocket(msg.from));
-                        break;
+                    case USER_NOT_FOUND: sendMessageThroughServer(msg, getUserSocket(msg.from)); break;
+                    case ALL_MEMBERS: sendMessageThroughServer(msg, getUserSocket(msg.from)); break;
+                    case ERROR: sendMessageThroughServer(msg, getUserSocket(msg.from)); break;
                     case MESSAGE:
-                        if (msg.isAlive()) {
-                            if (getUserSocket(msg.to) != null) {
+                        if (msg.isAlive() && getUserSocket(msg.to) != null) {
                                 sendMessageThroughServer(msg, getUserSocket(msg.to));
                                 break;
-                            }
                         } else {
                             msg.type = Type.ERROR;
                             if (getUserSocket(msg.from) != null)
@@ -156,7 +147,7 @@ public class SecondServer implements Runnable {
         return null;
     }
 
-    public void checkUserExists(String username, int newUser) {
+    public void userExists(String username, int newUser) {
         Message msg = new Message(Type.ADD, username);
         msg.loginUser = newUser;
         try {
@@ -166,7 +157,7 @@ public class SecondServer implements Runnable {
         }
     }
 
-    public void removeUserFromServer(String username) {
+    public void removeUser(String username) {
         synchronized (this) {
             for (ClientThread ct : currentClients) {
                 if (ct.clientName.equals(username)) {

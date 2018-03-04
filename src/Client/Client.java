@@ -14,6 +14,7 @@ public class Client implements Runnable {
     private String serverIP;
 
     public static Socket socket;
+
     private static ObjectOutputStream sendToServer;
     private static ObjectInputStream InFromServer;
 
@@ -32,30 +33,17 @@ public class Client implements Runnable {
                 Message msg = (Message) data;
                 switch (msg.type) {
                     case APPROVED:
-                        String username = (String) (msg.data);
-                        listener.sendMessage(new Message(Type.APPROVED, username));
-                        sendToServer.writeObject(new Message(Type.APPROVED, username));
+                        String usr = (String) (msg.data);
+                        listener.sendMessage(new Message(Type.APPROVED, usr));
+                        sendToServer.writeObject(new Message(Type.APPROVED, usr));
                         break;
-                    case USER_EXISTS:
-                        listener.sendMessage(new Message(Type.USER_EXISTS, msg.data));
-                        break;
-                    case LOCAL_MEMBERS:
-                        listener.sendMessage(new Message(Type.LOCAL_MEMBERS, msg.data));
-                        break;
-                    case ALL_MEMBERS:
-                        listener.sendMessage(new Message(Type.ALL_MEMBERS, msg.data));
-                        break;
-                    case MESSAGE:
-                        listener.sendMessage(msg);
-                        break;
-                    case ERROR:
-                        listener.sendMessage(msg);
-                        break;
-                    case USER_NOT_FOUND:
-                        listener.sendMessage(msg);
-                        break;
-                    default:
-                        break;
+                    case USER_EXISTS: listener.sendMessage(new Message(Type.USER_EXISTS, msg.data)); break;
+                    case ALL_MEMBERS: listener.sendMessage(new Message(Type.ALL_MEMBERS, msg.data)); break;
+                    case LOCAL_MEMBERS: listener.sendMessage(new Message(Type.LOCAL_MEMBERS, msg.data)); break;
+                    case MESSAGE: listener.sendMessage(msg); break;
+                    case ERROR: listener.sendMessage(msg); break;
+                    case USER_NOT_FOUND: listener.sendMessage(msg); break;
+                    default: break;
                 }
             }
         } catch (Exception e) {
@@ -80,7 +68,7 @@ public class Client implements Runnable {
         }
     }
 
-    void AddUserToServer(String username) {
+    public void AddUserToServer(String username) {
         Message msg = new Message(Type.ADD, username);
         try {
             sendToServer.writeObject(msg);
@@ -111,7 +99,6 @@ public class Client implements Runnable {
         Message msg = new Message(Type.ALL_MEMBERS, null);
         msg.from = username;
         try {
-            sendToServer.flush();
             sendToServer.writeObject(msg);
         } catch (IOException e) {
             e.printStackTrace();
@@ -126,8 +113,15 @@ public class Client implements Runnable {
         }
     }
 
-    public static void main(String[] args) {
+    public static ObjectOutputStream getSendToServer() {
+        return sendToServer;
+    }
 
+    public static ObjectInputStream getInFromServer() {
+        return InFromServer;
+    }
+
+    public static void main(String[] args) {
         ClientGUI.start();
     }
 

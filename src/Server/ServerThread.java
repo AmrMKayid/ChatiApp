@@ -107,9 +107,6 @@ public class ServerThread extends Thread {
         synchronized (this) {
             for (ServerThread st : currentServers) {
                 try {
-                    //TODO: Review
-//                    Message msg2 = new Message(msg.from, msg.to, msg.data, msg.type);
-//                    msg2.TTL = msg.TTL;
                     msg.decreaseTTL();
                     st.ToServer.writeObject(msg);
                 } catch (IOException e) {

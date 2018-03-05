@@ -1,6 +1,6 @@
 package Client;
 
-import ChatMessage.Message;
+import ChatMessage.ChatMassage;
 import ChatMessage.Type;
 
 import java.io.IOException;
@@ -30,16 +30,16 @@ public class Client implements Runnable {
         Object data;
         try {
             while (((data = InFromServer.readObject()) != null)) {
-                Message msg = (Message) data;
+                ChatMassage msg = (ChatMassage) data;
                 switch (msg.type) {
                     case APPROVED:
                         String usr = (String) (msg.data);
-                        listener.sendMessage(new Message(Type.APPROVED, usr));
-                        sendToServer.writeObject(new Message(Type.APPROVED, usr));
+                        listener.sendMessage(new ChatMassage(Type.APPROVED, usr));
+                        sendToServer.writeObject(new ChatMassage(Type.APPROVED, usr));
                         break;
-                    case USER_EXISTS: listener.sendMessage(new Message(Type.USER_EXISTS, msg.data)); break;
-                    case ALL_MEMBERS: listener.sendMessage(new Message(Type.ALL_MEMBERS, msg.data)); break;
-                    case LOCAL_MEMBERS: listener.sendMessage(new Message(Type.LOCAL_MEMBERS, msg.data)); break;
+                    case USER_EXISTS: listener.sendMessage(new ChatMassage(Type.USER_EXISTS, msg.data)); break;
+                    case ALL_MEMBERS: listener.sendMessage(new ChatMassage(Type.ALL_MEMBERS, msg.data)); break;
+                    case LOCAL_MEMBERS: listener.sendMessage(new ChatMassage(Type.LOCAL_MEMBERS, msg.data)); break;
                     case MESSAGE: listener.sendMessage(msg); break;
                     case ERROR: listener.sendMessage(msg); break;
                     case USER_NOT_FOUND: listener.sendMessage(msg); break;
@@ -69,43 +69,40 @@ public class Client implements Runnable {
     }
 
     public void AddUserToServer(String username) {
-        Message msg = new Message(Type.ADD, username);
         try {
-            sendToServer.writeObject(msg);
+            sendToServer.writeObject(new ChatMassage(Type.ADD, username));
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
     public void removeUserFromServer(String username) {
-        Message msg = new Message(Type.REMOVE, username);
         try {
-            sendToServer.writeObject(msg);
+            sendToServer.writeObject(new ChatMassage(Type.REMOVE, username));
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
     public void getLocalMembers() {
-        Message msg = new Message(Type.LOCAL_MEMBERS, null);
         try {
-            sendToServer.writeObject(msg);
+            sendToServer.writeObject(new ChatMassage(Type.LOCAL_MEMBERS, null));
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
     public void getAllMembers(String username) {
-        Message msg = new Message(Type.ALL_MEMBERS, null);
-        msg.from = username;
+        ChatMassage requestAll = new ChatMassage(Type.ALL_MEMBERS, null);
+        requestAll.from = username;
         try {
-            sendToServer.writeObject(msg);
+            sendToServer.writeObject(requestAll);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public void sendMessage(Message msg) {
+    public void sendMessage(ChatMassage msg) {
         try {
             sendToServer.writeObject(msg);
         } catch (IOException e) {

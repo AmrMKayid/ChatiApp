@@ -1,6 +1,6 @@
 package Server;
 
-import ChatMessage.Message;
+import ChatMessage.ChatMassage;
 import ChatMessage.Type;
 import Client.ClientThread;
 
@@ -44,16 +44,15 @@ public class SecondServer implements Runnable {
         }
 
         UserInput = new Scanner(System.in);
-        System.out.println("Please Enter the Main Server IP : ");
+        System.out.println("Please Enter the Main Server IP: ");
         mainServerIP = UserInput.nextLine();
 
-        System.out.println("Please Enter your PORT number : ");
+        System.out.println("Please Enter your PORT number: ");
         localPort = UserInput.nextInt();
 
         try {
             socket = new Socket(mainServerIP, 6000);
-            clientsIDS = new HashMap<>();
-            SocketsIDs = new HashMap<>();
+            clientsIDS = new HashMap<>(); SocketsIDs = new HashMap<>();
             InFromServer = new ObjectInputStream(socket.getInputStream());
             outToServer = new ObjectOutputStream(socket.getOutputStream());
         } catch (Exception e) {
@@ -84,7 +83,7 @@ public class SecondServer implements Runnable {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            System.out.println("New user is connected to the server.");
+            System.out.println("New user is connected!");
         }
 
     }
@@ -94,32 +93,33 @@ public class SecondServer implements Runnable {
         Object data;
         try {
             while ((data = InFromServer.readObject()) != null) {
-                Message msg = (Message) data;
+                ChatMassage msg = (ChatMassage) data;
 
                 switch (msg.type) {
                     case APPROVED:
-                        Message loginMsg = new Message(Type.APPROVED, msg.data);
+                        ChatMassage loginMsg = new ChatMassage(Type.APPROVED, msg.data);
                         sendMessageThroughServer(loginMsg, clientsIDS.get(msg.loginUser));
                         break;
                     case USER_EXISTS:
-                        loginMsg = new Message(Type.USER_EXISTS, msg.data);
+                        loginMsg = new ChatMassage(Type.USER_EXISTS, msg.data);
                         sendMessageThroughServer(loginMsg, clientsIDS.get(msg.loginUser));
                         break;
                     case USER_NOT_FOUND: sendMessageThroughServer(msg, getUserSocket(msg.from)); break;
                     case ALL_MEMBERS: sendMessageThroughServer(msg, getUserSocket(msg.from)); break;
                     case ERROR: sendMessageThroughServer(msg, getUserSocket(msg.from)); break;
                     case MESSAGE:
-                        if (msg.isAlive() && getUserSocket(msg.to) != null) {
+                        if (msg.isAlive()) {
+                            if (getUserSocket(msg.to) != null) {
                                 sendMessageThroughServer(msg, getUserSocket(msg.to));
                                 break;
+                            }
                         } else {
                             msg.type = Type.ERROR;
                             if (getUserSocket(msg.from) != null)
                                 sendMessageThroughServer(msg, getUserSocket(msg.from));
                         }
                         break;
-                    default:
-                        break;
+                    default: break;
                 }
             }
         } catch (Exception e) {
@@ -127,7 +127,7 @@ public class SecondServer implements Runnable {
         }
     }
 
-    private void sendMessageThroughServer(Message msg, Socket socket) {
+    private void sendMessageThroughServer(ChatMassage msg, Socket socket) {
         for (ClientThread ct : currentClients) {
             if (ct.clientSocket == socket) {
                 try {
@@ -148,7 +148,7 @@ public class SecondServer implements Runnable {
     }
 
     public void userExists(String username, int newUser) {
-        Message msg = new Message(Type.ADD, username);
+        ChatMassage msg = new ChatMassage(Type.ADD, username);
         msg.loginUser = newUser;
         try {
             outToServer.writeObject(msg);
@@ -163,7 +163,7 @@ public class SecondServer implements Runnable {
                 if (ct.clientName.equals(username)) {
                     currentClients.remove(currentClients.indexOf(ct));
                     try {
-                        outToServer.writeObject(new Message(Type.REMOVE, username));
+                        outToServer.writeObject(new ChatMassage(Type.REMOVE, username));
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -174,7 +174,7 @@ public class SecondServer implements Runnable {
     }
 
     public void getAllMembers(String username) {
-        Message msg = new Message(Type.ALL_MEMBERS, null);
+        ChatMassage msg = new ChatMassage(Type.ALL_MEMBERS, null);
         msg.from = username;
         try {
             outToServer.writeObject(msg);
@@ -183,7 +183,7 @@ public class SecondServer implements Runnable {
         }
     }
 
-    public void sendMessageToUser(Message msg) {
+    public void sendMessageToUser(ChatMassage msg) {
         msg.decreaseTTL();
         if (msg.isAlive()) {
             try {

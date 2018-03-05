@@ -1,6 +1,6 @@
 package Server;
 
-import ChatMessage.Message;
+import ChatMessage.ChatMassage;
 import ChatMessage.Type;
 
 import java.io.IOException;
@@ -38,21 +38,21 @@ public class ServerThread extends Thread {
 
             Object data;
             while (((data = FromServer.readObject()) != null)) {
-                Message msg = (Message) data;
+                ChatMassage msg = (ChatMassage) data;
                 if (msg == null || !msg.isAlive()) {
-                    ToServer.writeObject(new Message(Type.ERROR, null));
+                    ToServer.writeObject(new ChatMassage(Type.ERROR, null));
                 }
                 switch (msg.type) {
                     case ADD:
                         String username = (String) msg.data;
-                        Message loginMessage;
+                        ChatMassage loginChatMassage;
                         if (addNewUser(username)) {
-                            loginMessage = new Message(Type.APPROVED, username);
+                            loginChatMassage = new ChatMassage(Type.APPROVED, username);
                         } else {
-                            loginMessage = new Message(Type.USER_EXISTS, username);
+                            loginChatMassage = new ChatMassage(Type.USER_EXISTS, username);
                         }
-                        loginMessage.loginUser = msg.loginUser;
-                        ToServer.writeObject(loginMessage);
+                        loginChatMassage.loginUser = msg.loginUser;
+                        ToServer.writeObject(loginChatMassage);
                         break;
                     case REMOVE:
                         username = (String) msg.data;
@@ -60,7 +60,7 @@ public class ServerThread extends Thread {
                         break;
                     case ALL_MEMBERS:
                         String[] allMembers = AllMembers();
-                        Message allMembersMsg = new Message(Type.ALL_MEMBERS, allMembers);
+                        ChatMassage allMembersMsg = new ChatMassage(Type.ALL_MEMBERS, allMembers);
                         allMembersMsg.from = msg.from;
                         ToServer.writeObject(allMembersMsg);
                         break;
@@ -92,7 +92,7 @@ public class ServerThread extends Thread {
         return true;
     }
 
-    private boolean UserExists(Message msg) {
+    private boolean UserExists(ChatMassage msg) {
         for (String user : currentUsers)
             if (msg.to.equals(user))
                 return true;
@@ -103,7 +103,7 @@ public class ServerThread extends Thread {
         currentUsers.remove(username);
     }
 
-    private void send2User(Message msg) {
+    private void send2User(ChatMassage msg) {
         synchronized (this) {
             for (ServerThread st : currentServers) {
                 try {

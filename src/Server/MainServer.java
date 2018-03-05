@@ -11,6 +11,7 @@ public class MainServer {
 
     public static ServerSocket serverSocket;
     private static Socket clientSocket;
+
     private static ArrayList<ServerThread> currentServers;
     private static HashSet<String> currentUsers;
 
@@ -31,7 +32,7 @@ public class MainServer {
                         clientSocket, currentServers, currentUsers));
 
                 currentServers.get(currentServers.size() - 1).start();
-                System.out.println("New server is connected.");
+                System.out.println("New server is connected");
 
             } catch (IOException e) {
                 e.printStackTrace();

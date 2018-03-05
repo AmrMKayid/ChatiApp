@@ -1,9 +1,9 @@
 package Client;
 
-import ChatMessage.Message;
+import ChatMessage.ChatMassage;
 
 public interface Listener {
 
-    void sendMessage(Message msg);
+    void sendMessage(ChatMassage msg);
     
 }

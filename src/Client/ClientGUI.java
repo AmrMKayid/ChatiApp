@@ -111,7 +111,7 @@ public class ClientGUI implements Serializable, Listener {
     public static void init() {
         frame = new JFrame("GUI");
         frame.setTitle("ChatiApp");
-        frame.setSize(new Dimension(800, 600));
+        frame.setSize(new Dimension(600, 600));
         frame.setLocationRelativeTo(null);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         gui = new ClientGUI();
